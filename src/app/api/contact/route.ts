@@ -18,6 +18,7 @@ export async function POST(req: NextRequest) {
     const gmailAppPassword = process.env.GMAIL_APP_PASSWORD?.replace(/\s+/g, "");
     const recipientEmail =
       process.env.CONTACT_RECIPIENT_EMAIL || gmailUser || "jakdesigns2017@gmail.com";
+    const ccEmail = process.env.CONTACT_CC_EMAILS || undefined;
 
     // Verify SMTP credentials are configured
     if (!gmailUser || !gmailAppPassword) {
@@ -212,6 +213,7 @@ JAK Designs & Construction • www.jakdesignstudios.com
     await transporter.sendMail({
       from: `"JAK Website Leads" <${gmailUser}>`,
       to: recipientEmail,
+      cc: ccEmail,
       replyTo: `"${name}" <${email}>`,
       subject: `🏛️ New Lead: ${name} - ${projectType} (${location})`,
       text: textContent,
