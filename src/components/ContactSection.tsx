@@ -10,6 +10,7 @@ import {
   MessageSquare,
   Send,
   CheckCircle2,
+  AlertCircle,
   Clock,
   Sparkles,
 } from "lucide-react";
@@ -28,6 +29,7 @@ export default function ContactSection() {
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
 
   const validate = () => {
     const errs: Record<string, string> = {};
@@ -48,7 +50,7 @@ export default function ContactSection() {
     return errs;
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const validationErrors = validate();
     if (Object.keys(validationErrors).length > 0) {
@@ -57,13 +59,32 @@ export default function ContactSection() {
     }
 
     setErrors({});
+    setSubmitError(null);
     setIsSubmitting(true);
 
-    // Simulate submission delay
-    setTimeout(() => {
-      setIsSubmitting(false);
+    try {
+      const res = await fetch("/api/contact", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(formData),
+      });
+
+      const result = await res.json();
+
+      if (!res.ok) {
+        throw new Error(result.error || "Failed to transmit inquiry.");
+      }
+
       setIsSubmitted(true);
-    }, 1000);
+    } catch (err: unknown) {
+      const message =
+        err instanceof Error
+          ? err.message
+          : "Unable to send your request. Please reach out to us directly.";
+      setSubmitError(message);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const projectTypes = [
@@ -233,23 +254,37 @@ export default function ContactSection() {
                     Our architectural engineering team will review your project parameters and contact you via{" "}
                     <strong className="text-[#142544]">{formData.phone}</strong> within 24 business hours.
                   </p>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setIsSubmitted(false);
-                      setFormData({
-                        name: "",
-                        phone: "",
-                        email: "",
-                        projectType: "Residential Architecture",
-                        location: "",
-                        message: "",
-                      });
-                    }}
-                    className="px-6 py-2.5 bg-[#142544] text-[#F59E0B] font-mono text-xs uppercase tracking-wider font-semibold rounded-xs"
-                  >
-                    Submit Another Inquiry
-                  </button>
+                  <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
+                    <a
+                      href={`https://wa.me/919994709073?text=${encodeURIComponent(
+                        `Hi JAK Designs, I submitted a consultation inquiry for ${formData.projectType} in ${formData.location}. Name: ${formData.name}`
+                      )}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="w-full sm:w-auto px-6 py-2.5 bg-[#25D366] hover:bg-[#20bd5a] text-white font-mono text-xs uppercase tracking-wider font-semibold rounded-xs shadow transition-colors flex items-center justify-center gap-2"
+                    >
+                      <MessageSquare className="w-4 h-4" />
+                      <span>Chat on WhatsApp</span>
+                    </a>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setIsSubmitted(false);
+                        setSubmitError(null);
+                        setFormData({
+                          name: "",
+                          phone: "",
+                          email: "",
+                          projectType: "Residential Architecture",
+                          location: "",
+                          message: "",
+                        });
+                      }}
+                      className="w-full sm:w-auto px-6 py-2.5 bg-[#142544] hover:bg-[#1e3661] text-[#F59E0B] font-mono text-xs uppercase tracking-wider font-semibold rounded-xs transition-colors"
+                    >
+                      Submit Another Inquiry
+                    </button>
+                  </div>
                 </motion.div>
               ) : (
                 <form onSubmit={handleSubmit} className="space-y-6">
@@ -393,6 +428,36 @@ export default function ContactSection() {
                       className="w-full px-4 py-3 bg-[#F7F8FA] border border-[#E4E7EC] text-sm text-[#142544] rounded-xs focus:outline-none focus:ring-2 focus:ring-[#142544]"
                     />
                   </div>
+
+                  {/* Submission Error Alert with Fallback */}
+                  {submitError && (
+                    <div className="p-4 bg-rose-50 border border-rose-200 rounded-xs flex items-start gap-3 text-left">
+                      <AlertCircle className="w-5 h-5 text-rose-600 shrink-0 mt-0.5" />
+                      <div className="flex-1">
+                        <p className="text-xs font-semibold text-rose-800">
+                          {submitError}
+                        </p>
+                        <div className="mt-2 flex flex-wrap items-center gap-4 text-xs font-mono">
+                          <a
+                            href={`https://wa.me/919994709073?text=${encodeURIComponent(
+                              `Hi JAK Designs, I would like to consult about ${formData.projectType || "a project"} in ${formData.location || "India"}. My name is ${formData.name || "Client"}. Phone: ${formData.phone || ""}`
+                            )}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-[#25D366] font-bold hover:underline"
+                          >
+                            Send via WhatsApp →
+                          </a>
+                          <a
+                            href="tel:+919994709073"
+                            className="text-[#142544] font-bold hover:underline"
+                          >
+                            Direct Call +91 99947 09073 →
+                          </a>
+                        </div>
+                      </div>
+                    </div>
+                  )}
 
                   {/* Submit CTA */}
                   <button
