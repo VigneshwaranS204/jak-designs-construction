@@ -39,3 +39,7 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# temp / extraction
+brochure_extracted/
+assets_contact_sheet.jpg
