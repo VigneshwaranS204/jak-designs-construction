@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import nodemailer from "nodemailer";
 
+export const dynamic = "force-dynamic";
+export const maxDuration = 15;
+
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
@@ -14,33 +17,25 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const gmailUser = process.env.GMAIL_USER;
-    const gmailAppPassword = process.env.GMAIL_APP_PASSWORD?.replace(/\s+/g, "");
+    const gmailUser = process.env.GMAIL_USER || "vigneshwarans204@gmail.com";
+    const rawPass = process.env.GMAIL_APP_PASSWORD || "pqdy xzqb cjvh sknt";
+    const gmailAppPassword = rawPass.replace(/\s+/g, "");
     const recipientEmail =
-      process.env.CONTACT_RECIPIENT_EMAIL || gmailUser || "jakdesigns2017@gmail.com";
-    const ccEmail = process.env.CONTACT_CC_EMAILS || undefined;
+      process.env.CONTACT_RECIPIENT_EMAIL || "jakdesigns2017@gmail.com";
+    const ccEmail = process.env.CONTACT_CC_EMAILS || "vigneshwarans204@gmail.com";
 
-    // Verify SMTP credentials are configured
-    if (!gmailUser || !gmailAppPassword) {
-      console.warn(
-        "[Contact API] Gmail credentials missing. Please set GMAIL_USER and GMAIL_APP_PASSWORD in .env.local"
-      );
-      return NextResponse.json(
-        {
-          error:
-            "Email service is not fully configured yet. Please configure GMAIL_APP_PASSWORD in .env.local or contact the team directly via phone/WhatsApp.",
-        },
-        { status: 503 }
-      );
-    }
-
-    // Configure Nodemailer Gmail Transporter
+    // Configure Nodemailer Gmail Transporter with direct SSL port 465
     const transporter = nodemailer.createTransport({
-      service: "gmail",
+      host: "smtp.gmail.com",
+      port: 465,
+      secure: true,
       auth: {
         user: gmailUser,
         pass: gmailAppPassword,
       },
+      connectionTimeout: 10000,
+      greetingTimeout: 10000,
+      socketTimeout: 10000,
     });
 
     const cleanPhone = phone.replace(/[^0-9+]/g, "");
@@ -230,9 +225,8 @@ JAK Designs & Construction • www.jakdesignstudios.com
       error instanceof Error ? error.message : "Failed to process consultation request.";
     return NextResponse.json(
       {
-        error:
-          "Unable to send your inquiry at this moment. Please call or WhatsApp us directly at +91 99947 09073.",
-        details: process.env.NODE_ENV === "development" ? errorMessage : undefined,
+        error: `Submission issue: ${errorMessage}. Please reach out via WhatsApp or call +91 99947 09073.`,
+        details: errorMessage,
       },
       { status: 500 }
     );
